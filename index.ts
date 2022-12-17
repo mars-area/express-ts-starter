@@ -1,4 +1,4 @@
-import express, { Express, Request, Response } from 'express';
+import express, { Express } from 'express';
 import { PORT } from './src/config';
 import { errorHandling } from './src/middlewares/error';
 
@@ -30,17 +30,29 @@ app.use(cors({
 import { Routes } from './src/routes/v1';
 app.routes = Routes(app);
 
+// Database
+import { prisma } from './src/connect/prisma';
+
 // Bootstrap the app
-function main() {
-    try {
-        app.listen(port, () => {
-            console.log(`⚡️[server]: Server is running at port:${port}`);
-        });
-        // Error handling
-        app.use(errorHandling);
-    } catch (err) {
-        console.error('⚡️[server]: Server error: ', err);
-    }
+function main(): Promise<any> {
+    return new Promise(async (resolve, reject) => {
+        try {
+            // Connect to database
+            await prisma.$connect();
+            console.log('⚡️[server]: Database connected');
+    
+            const server = app.listen(port, () => {
+                console.log(`⚡️[server]: Server is running at port:${port}`);
+            });
+            // Error handling
+            app.use(errorHandling);
+
+            resolve(server);
+        } catch (err) {
+            console.error('⚡️[server]: Server error: ', err);
+            reject(err);
+        }
+    })
 }
 
 main();
